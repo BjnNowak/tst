@@ -1,0 +1,205 @@
+---
+title: "TP1"
+format: html
+editor: visual
+---
+
+following this tutorial from Nicolas Lambert :
+
+https://observablehq.com/\@neocartocnrs/tuto-observable-with-quarto
+
+    ```{ojs}
+    //| echo: false
+    //| eval: true
+
+    // Import xls file
+    classeur = FileAttachment("data/afrika.xlsx").xlsx()
+
+    // voir la liste des feuilles contenues dans le classeur excel
+    classeur.sheetNames
+
+    // créons une variable data contenant les données de feuille data
+    data = classeur.sheet("data", {headers:true})
+
+    Inputs.table(data)
+
+    // Import du fond de carte
+    countries = FileAttachment("data/africa.json").json()
+
+    bertin = require("bertin@latest")
+    d3 = require("d3@latest")
+
+    bertin.quickdraw(countries, 100)
+
+    // pour visualiser la table d'attributs
+    Inputs.table(bertin.properties.table(countries))
+
+    // faire la jointure entre les données et la carte
+    africa = bertin.merge(countries, "id", data, "iso3")
+
+    // dans le package bertin, les cartes sont faites avec la fonction "draw":
+
+    bertin.draw({
+      params : {
+        width : 500, 
+        background: "#CCC",
+        margin: 20
+      }, 
+      layers :
+        [
+          {geojson: africa, fill: "#e07edd"},
+          {type: "header", text: "Le continent africain"},
+          {type: "scalebar"}
+        ]
+      })
+
+
+    bertin.draw({
+      params : {width : 500, background: "#CCC", margin: 20}, 
+      layers :
+        [
+          {
+            type : "bubble", 
+            geojson: africa,
+            values: "POP",
+            k: 50, // rayon du plus grand cercle
+            fill: "red",
+            leg_x: 30,
+            leg_y: 300,
+            leg_round: 0,
+            leg_title: "Nombre d'habitants\n (en millions)"
+          },
+          {geojson: africa, fill: "#DDD"},
+          {type: "header", text: "Le continent africain"},
+          {type: "scalebar"}
+        ]
+      })
+      
+      bertin.draw({
+      params : {width : 500, background: "#CCC", margin: 20}, 
+      layers :
+        [
+        {
+            type : "bubble", 
+            geojson: africa,
+            values: "POP",
+            k: 50, // rayon du plus grand cercle
+            fill: "red",
+            fillOpacity: "0%",
+            stroke: "black",
+            leg_x: 30,
+            leg_y: 300,
+            leg_round: 0,
+            leg_title: "Nombre d'habitants\n (en millions)"
+          },
+          {
+            geojson: africa, 
+            fill: {
+                    type : "typo",
+                    values: "SUBREG",
+                    leg_x: 30,
+                    leg_y: 330,
+                    leg_title: "Sub regions",
+                    txt_missing: "Pas de données",
+                    pal: "Tableau10",
+                  }
+          },
+
+          {type: "header", text: "Le continent africain"},
+        ]
+      })
+
+
+    ```
+
+Choroplethe
+
+```{ojs}
+
+//| echo: false
+//| eval: true
+
+bertin.draw({
+
+  params : {width : 500, background: "#CCC", margin: 20}, 
+
+  layers :
+
+    [
+
+      {
+
+        geojson: africa, 
+
+        fill: {
+
+                type : "choro",
+
+                values: "IDH",
+
+                leg_x: 30, // position de la légende en x
+
+                leg_y: 330, // position de la légende en y
+
+                leg_round: 2, // 2 chiffres après la virgule
+
+                leg_title: "IDH",
+
+                txt_missing: "Pas de données",
+
+                method: "quantile",
+
+                nbreaks: 4,
+
+                colors: "OrRd"
+
+              }
+
+      },
+
+      {type: "header", text: "Indicateur de développement humain"},
+
+    ]
+
+  })
+
+
+// Carte interactive avec la carte du monde
+
+world = FileAttachment("data/world.json").json()
+
+viewof k = Inputs.range([10, 75], { label: "Taille", step: 1, value: 40 })
+viewof symbol = Inputs.radio(["bubble", "square", "spikes"], { label: "Symbole", value: "bubble" })
+viewof color = Inputs.color({label: "Couleur", value: "#CC0000"})
+viewof toggle = Inputs.toggle({label: "Ecarter les symboles", value: false})
+
+bertin.draw({
+  params : {width : 500, background: "#8ddaf0", margin: 20, extent: africa}, 
+  layers :
+    [
+      {
+        type : symbol, 
+        geojson: africa,
+        values: "POP",
+        k: k, // rayon du plus grand cercle
+        fill: color,
+        fillOpacity: "50%",
+        stroke: "black",
+        dorling: toggle,
+        leg_x: 30,
+        leg_y: 300,
+        leg_round: 0,
+        leg_title: "Nombre d'habitants\n (en millions)",
+        tooltip: ["$name", d => Math.round(d.properties.POP) + " millions d'habitants"]
+      },
+      {geojson: africa, fill: "#DDD"},
+      {type:"shadow", geojson:africa},
+      {geojson:world, fill:"white", fillOpacity:0.5, stroke: "none"},
+      {type:"hatch"},
+      {type: "header", text: "Le continent africain"},
+      {type: "scalebar"}
+    ]
+  })
+
+
+```
